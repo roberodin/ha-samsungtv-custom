@@ -56,14 +56,30 @@ Edit it by adding the following lines:
 # How to use
 
 ### Send Keys
+```
+service: media_player.play_media
+```
+
 ```json
 {
   "entity_id": "media_player.samsungtv",
-  "media_content_type": "send_key"
+  "media_content_type": "send_key",
   "media_content_id": "KEY_POWERON",
 }
 ```
 **Note**: Change "KEY_POWERON" by desired key_code.
+
+Script example:
+```
+tv_channel_down:
+  alias: Channel down
+  sequence:
+  - service: media_player.play_media
+    data:
+      entity_id: media_player.samsung_tv55
+      media_content_id: KEY_CHDOWN
+      media_content_type: "send_key"
+```
 
 
 ***Key codes***
