@@ -1,6 +1,6 @@
 {
   "domain": "samsungtv",
-  "name": "Samsung TV Custom",
+  "name": "Samsungtv Custom",
   "documentation": "https://github.com/roberodin/ha-samsungtv-custom",
   "requirements": [
     "samsungctl[websocket]==0.7.1",

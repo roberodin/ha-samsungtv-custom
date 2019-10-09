@@ -17,7 +17,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 ### 1. Easy Mode
 
-We support [HACS](https://hacs.netlify.com/). Open HACS panel, go to Settings > Add custom repository > https://github.com/roberodin/ha-samsungtv-custom > Select Integration category and Save. After adding a repository, go to "STORE", and search "SamsungTV Custom" and install.
+We support [HACS](https://hacs.netlify.com/). Open HACS panel, go to Settings > Add custom repository > https://github.com/roberodin/ha-samsungtv-custom > Select Integration category and Save. After adding a repository, go to "STORE", and search "Samsungtv Custom" and install.
 
 ### 2. Manual
 
