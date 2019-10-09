@@ -1,24 +1,31 @@
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+
 # HomeAssistant - SamsungTV Custom Component
 
-This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io) adding extra features to  the [official component](https://www.home-assistant.io/integrations/samsungtv/).
+This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features:
 
 # Additional Features:
-Basically it is a fork of the official component but with some extra features:
 
 * Ability to send keys using a native Home Assistant service
 * Ability to customize source list at media player dropdown list
 
-![N|Solid](https://github.com/roberodin/ha-samsungtv-custom/blob/master/images/sourcelist.png)
-![N|Solid](https://github.com/roberodin/ha-samsungtv-custom/blob/master/images/service.png)
+![N|Solid](https://i.imgur.com/8mCGZoO.png)
+![N|Solid](https://i.imgur.com/t3e4bJB.png)
 
-# Installation & Configuration
+
+# Installation (There are two methods, with HACS or manual)
+
+### 1. Easy Mode
+
+We support [HACS](https://hacs.netlify.com/). Open HACS panel, go to Settings > Add custom repository > https://github.com/roberodin/ha-samsungtv-custom > Select Integration category and Save. After adding a repository, go to "STORE", and search "SamsungTV Custom" and install.
+
+### 2. Manual
 
 Install it as you would do with any homeassistant custom component:
-1. Download the latest zip release archive from [here](https://github.com/roberodin/ha-samsuntv-custom/blob/master/releases/download/1.0/samsungtv_custom.zip) (or clone the git master branch)
-2. Unzip/copy the samsungtv_custom direcotry within the `custom_components` directory of your homeassistant installation.
-The `custom_components` directory resides within your homeassistant configuration directory.
-Usually, the configuration directory is within your home (`~/.homeassistant/`).
-In other words, the configuration directory of homeassistant is where the config.yaml file is located.
+
+1. Download `custom_components` folder.
+2. Copy the `samsungtv_custom` direcotry within the `custom_components` directory of your homeassistant installation. The `custom_components` directory resides within your homeassistant configuration directory.
+**Note**: if the custom_components directory does not exist, you need to create it.
 After a correct installation, your configuration directory should look like the following.
     ```
     └── ...
@@ -29,9 +36,11 @@ After a correct installation, your configuration directory should look like the 
             └── media_player.py
             └── manifest.json
     ```
-    **Note**: if the custom_components directory does not exist, you need to create it.
- 
-3. Enable the component by editing the configuration.yaml file (within the config directory as well).
+
+
+# Configuration
+
+1. Enable the component by editing the configuration.yaml file (within the config directory as well).
 Edit it by adding the following lines:
     ```
     # Example configuration.yaml entry
@@ -40,20 +49,19 @@ Edit it by adding the following lines:
         host: IP_ADDRESS
         sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
     ```
-    **Note**: All documentation in official [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) is valid!
+    **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
 
-    ## EXTRA CONFIGURATION VARIABLES
+    ### Custom configuration variables
 
     **sourcelist:**<br/>
     (json)(Optional)<br/>
     This contains the visible sources in the dropdown list in media player UI.<br/>
     Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
 
-
 2. Reboot Home Assistant
 3. Congrats! You're all set!
 
-# How to use
+# Usage
 
 ### Send Keys
 ```
@@ -64,10 +72,10 @@ service: media_player.play_media
 {
   "entity_id": "media_player.samsungtv",
   "media_content_type": "send_key",
-  "media_content_id": "KEY_POWERON",
+  "media_content_id": "KEY_CODE",
 }
 ```
-**Note**: Change "KEY_POWERON" by desired key_code.
+**Note**: Change "KEY_CODEKEY" by desired key_code.
 
 Script example:
 ```
@@ -80,7 +88,6 @@ tv_channel_down:
       media_content_id: KEY_CHDOWN
       media_content_type: "send_key"
 ```
-
 
 ***Key codes***
 ---------------
