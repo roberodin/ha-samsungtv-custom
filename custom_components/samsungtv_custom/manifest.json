@@ -1,5 +1,5 @@
 {
-  "domain": "samsungtv",
+  "domain": "samsungtv_custom",
   "name": "Samsungtv Custom",
   "documentation": "https://github.com/roberodin/ha-samsungtv-custom",
   "requirements": [
