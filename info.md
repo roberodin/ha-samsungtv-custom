@@ -1,5 +1,5 @@
 [![](https://img.shields.io/github/release/roberodin/ha-samsungtv-custom/all.svg?style=for-the-badge)](https://github.com/roberodin/ha-samsungtv-custom/releases)
-[![](https://img.shields.io/badge/HACS-CUSTOM-orange?style=for-the-badge)](https://github.com/custom-components/hacs)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 [![](https://img.shields.io/github/license/roberodin/ha-samsungtv-custom?style=for-the-badge)](LICENSE)
 [![](https://img.shields.io/badge/MAINTAINER-%40roberodin-red?style=for-the-badge)](https://github.com/roberodin)
 [![](https://img.shields.io/badge/COMMUNITY-FORUM-success?style=for-the-badge)](https://community.home-assistant.io)
@@ -16,31 +16,6 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
 
-{% if not installed %}
-# Installation (There are two methods, with HACS or manual)
-
-### 1. Easy Mode
-
-We support [HACS](https://hacs.netlify.com/). Open HACS panel, go to Settings > Add custom repository > https://github.com/roberodin/ha-samsungtv-custom > Select Integration category and Save. After adding a repository, go to "STORE", and search "Samsungtv Custom" and install.
-
-### 2. Manual
-
-Install it as you would do with any homeassistant custom component:
-
-1. Download `custom_components` folder.
-2. Copy the `samsungtv_custom` direcotry within the `custom_components` directory of your homeassistant installation. The `custom_components` directory resides within your homeassistant configuration directory.
-**Note**: if the custom_components directory does not exist, you need to create it.
-After a correct installation, your configuration directory should look like the following.
-    ```
-    └── ...
-    └── configuration.yaml
-    └── custom_components
-        └── samsungtv_custom
-            └── __init__.py
-            └── media_player.py
-            └── manifest.json
-    ```
-{% endif %}
 
 # Configuration
 
