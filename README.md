@@ -12,7 +12,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 * Ability to send keys using a native Home Assistant service
 * Ability to customize source list at media player dropdown list
-* Ability to change communication protocol from SamsungCtl (HA default) to WS (for 2016+ TVs model)
+* Ability to change communication protocol from SamsungCtl (HA default) to SamsungTvWS (for 2016+ TVs model) (From @xchwarze refactor)
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
