@@ -12,6 +12,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 * Ability to send keys using a native Home Assistant service
 * Ability to customize source list at media player dropdown list
+* Ability to change communication protocol from SamsungCtl (HA default) to WS (for 2016+ TVs model)
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
@@ -36,6 +37,7 @@ After a correct installation, your configuration directory should look like the 
     └── configuration.yaml
     └── custom_components
         └── samsungtv_custom
+            └── samsungtvws
             └── __init__.py
             └── media_player.py
             └── manifest.json
@@ -51,17 +53,25 @@ Edit it by adding the following lines:
     media_player:
       - platform: samsungtv_custom
         host: IP_ADDRESS
+        port: PORT (8001 or 8002)
+        mac: MAC_ADDRESS
         sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+        protocol: PROTOCOL (ctl or ws)
     ```
-    **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
+    **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component, except for the custom variables.
 
-    ### Custom configuration variables
+    ### Custom variables
 
     **sourcelist:**<br/>
     (json)(Optional)<br/>
     This contains the visible sources in the dropdown list in media player UI.<br/>
     Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
 
+    **protocol:**<br/>
+    (string)(Optional)<br/>
+    This determine which communication protocol will be used [ctl or ws]. If it does not work with the default protocol try changing it to the ws.<br/>
+    Default value: ctl<br/>
+    
 2. Reboot Home Assistant
 3. Congrats! You're all set!
 
