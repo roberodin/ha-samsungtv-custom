@@ -461,4 +461,5 @@ Please note that some codes are different on the 2016+ TVs. For example, `KEY_PO
 ***References***
 ----------------
 
-The code list has been extracted from: https://github.com/kdschlosser/samsungctl
+The code list has been extracted from: https://github.com/kdschlosser/samsungctl<br>
+The ws wrapper from: https://github.com/xchwarze/samsung-tv-ws-api
