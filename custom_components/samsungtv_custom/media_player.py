@@ -5,7 +5,14 @@ import logging
 import socket
 import json
 import voluptuous as vol
+import os
+import wakeonlan
+import websocket
 
+# Load WS implementation from plugin folder
+from custom_components.samsungtv_custom.samsungtvws.remote import SamsungTVWS
+
+from homeassistant import util
 from homeassistant.components.media_player import MediaPlayerDevice, PLATFORM_SCHEMA
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
@@ -35,12 +42,14 @@ from homeassistant.util import dt as dt_util
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Samsung TV Remote"
-DEFAULT_PORT = 55000
-DEFAULT_TIMEOUT = 1
-KEY_PRESS_TIMEOUT = 1.2
+DEFAULT_PORT = 8002
+DEFAULT_TIMEOUT = 5
+KEY_PRESS_TIMEOUT = 1
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 CONF_SOURCELIST = "sourcelist"
+MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=2)
+MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
 SUPPORT_SAMSUNGTV = (
     SUPPORT_PAUSE
@@ -65,7 +74,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the Samsung TV platform."""
     known_devices = hass.data.get(KNOWN_DEVICES_KEY)
@@ -79,7 +87,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         sourcelist = json.loads(config.get(CONF_SOURCELIST))
     else:
         sourcelist = SOURCES
-        
+    
     # Is this a manual configuration?
     if config.get(CONF_HOST) is not None:
         host = config.get(CONF_HOST)
@@ -118,82 +126,67 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     def __init__(self, host, port, name, timeout, mac, uuid, sourcelist):
         """Initialize the Samsung device."""
-        from samsungctl import exceptions
-        from samsungctl import Remote
-        import wakeonlan
 
         # Save a reference to the imported classes
-        self._exceptions_class = exceptions
-        self._remote_class = Remote
         self._name = name
         self._mac = mac
         self._uuid = uuid
-        self._wol = wakeonlan
         # Assume that the TV is not muted
         self._muted = False
         # Assume that the TV is in Play mode
         self._playing = True
         self._state = None
-        self._remote = None
         # Mark the end of a shutdown command (need to wait 15 seconds before
         # sending the next command to avoid turning the TV back ON).
         self._end_of_power_off = None
-        # Generate a configuration for the Samsung library
-        self._config = {
-            "name": "HomeAssistant",
-            "description": name,
-            "id": "ha.component.samsung",
-            "port": port,
-            "host": host,
-            "timeout": timeout,
-        }
-        self._sourcelist = sourcelist
-        
-        if self._config["port"] in (8001, 8002):
-            self._config["method"] = "websocket"
-        else:
-            self._config["method"] = "legacy"
 
+        self._sourcelist = sourcelist
+
+        token_file = os.path.dirname(os.path.realpath(__file__)) + '/tv-token.txt'
+        self._remote = SamsungTVWS(
+            name=name,
+            host=host,
+            port=port,
+            timeout=timeout,
+            key_press_delay=KEY_PRESS_TIMEOUT,
+            token_file=token_file
+        )
+
+    @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
-        self.send_key("KEY")
+        self.send_key("KEY", 1)
 
-    def get_remote(self):
-        """Create or return a remote control instance."""
-        if self._remote is None:
-            # We need to create a new instance to reconnect.
-            self._remote = self._remote_class(self._config)
-
-        return self._remote
-
-    def send_key(self, key):
+    def send_key(self, key, retry_count = 1):
         """Send a key to the tv and handles exceptions."""
         if self._power_off_in_progress() and key not in ("KEY_POWER", "KEY_POWEROFF"):
             _LOGGER.info("TV is powering off, not sending command: %s", key)
             return
+
         try:
             # recreate connection if connection was dead
-            retry_count = 1
             for _ in range(retry_count + 1):
                 try:
-                    self.get_remote().control(key)
+                    self._remote.send_key(key)
                     break
-                except (self._exceptions_class.ConnectionClosed, BrokenPipeError):
-                    # BrokenPipe can occur when the commands is sent to fast
-                    self._remote = None
+                except (
+                    ConnectionResetError, 
+                    AttributeError, 
+                    BrokenPipeError
+                ):
+                    self._remote.close()
+
             self._state = STATE_ON
-        except (
-            self._exceptions_class.UnhandledResponse,
-            self._exceptions_class.AccessDenied,
-        ):
+        except websocket._exceptions.WebSocketTimeoutException:
             # We got a response so it's on.
             self._state = STATE_ON
-            self._remote = None
+            self._remote.close()
             _LOGGER.debug("Failed sending command %s", key, exc_info=True)
-            return
+
         except OSError:
             self._state = STATE_OFF
-            self._remote = None
+            self._remote.close()
+
         if self._power_off_in_progress():
             self._state = STATE_OFF
 
@@ -233,20 +226,17 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Flag media player features that are supported."""
         if self._mac:
             return SUPPORT_SAMSUNGTV | SUPPORT_TURN_ON
+
         return SUPPORT_SAMSUNGTV
 
     def turn_off(self):
         """Turn off media player."""
         self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=15)
+        self.send_key("KEY_POWER")
 
-        if self._config["method"] == "websocket":
-            self.send_key("KEY_POWER")
-        else:
-            self.send_key("KEY_POWEROFF")
         # Force closing of remote session to provide instant UI feedback
         try:
-            self.get_remote().close()
-            self._remote = None
+            self._remote.close()
         except OSError:
             _LOGGER.debug("Could not establish connection.")
 
@@ -311,7 +301,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     def turn_on(self):
         """Turn the media player on."""
         if self._mac:
-            self._wol.send_magic_packet(self._mac)
+            wakeonlan.send_magic_packet(self._mac)
         else:
             self.send_key("KEY_POWERON")
 
