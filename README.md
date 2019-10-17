@@ -1,27 +1,29 @@
-[![](https://img.shields.io/github/release/roberodin/ha-samsungtv-custom/all.svg?style=for-the-badge)](https://github.com/roberodin/ha-samsungtv-custom/releases)
+[![](https://img.shields.io/github/release/xchwarze/ha-samsungtv-custom/all.svg?style=for-the-badge)](https://github.com/xchwarze/ha-samsungtv-custom/releases)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
-[![](https://img.shields.io/github/license/roberodin/ha-samsungtv-custom?style=for-the-badge)](LICENSE)
-[![](https://img.shields.io/badge/MAINTAINER-%40roberodin-red?style=for-the-badge)](https://github.com/roberodin)
+[![](https://img.shields.io/github/license/xchwarze/ha-samsungtv-custom?style=for-the-badge)](LICENSE)
+[![](https://img.shields.io/badge/MAINTAINER-%40xchwarze-red?style=for-the-badge)](https://github.com/xchwarze)
 [![](https://img.shields.io/badge/COMMUNITY-FORUM-success?style=for-the-badge)](https://community.home-assistant.io)
 
 # HomeAssistant - SamsungTV Custom Component
 
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features:
+This plugin is only for 2016+ TVs model! (maybe all tizen family)
 
 # Additional Features:
 
 * Ability to send keys using a native Home Assistant service
 * Ability to customize source list at media player dropdown list
+* Migrate SamsungCtl to SamsungTvWs 
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
 
 
-# Installation (There are two methods, with HACS or manual)
+# Installation
 
 ### 1. Easy Mode
 
-We support [HACS](https://hacs.netlify.com/). Go to "STORE", search "SamsungTV Custom" and install.
+TODO
 
 ### 2. Manual
 
@@ -51,6 +53,8 @@ Edit it by adding the following lines:
     media_player:
       - platform: samsungtv_custom
         host: IP_ADDRESS
+        port: PORT (8001 or 8002)
+        mac: MAC_ADDRESS
         sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
