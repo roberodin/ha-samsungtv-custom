@@ -154,7 +154,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(self, host, port, name, timeout, mac, uuid, sourcelist, beta):
+    def __init__(self, host, port, name, timeout, mac, uuid, sourcelist, protocol):
         """Initialize the Samsung device."""
         if protocol == "ctl_beta":
             from .samsungctl_080b import exceptions
