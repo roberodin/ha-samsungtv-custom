@@ -108,7 +108,7 @@ Edit it by adding the following lines:
     **ctl_beta**: Last beta version of samsungctl.<br>
     **ctl_qled**: Only for latest TV QLED models and similar.<br>
 
-    - **sourcelist:** (list)(Optional) List of the apps you want in the source drop down menu (YouTube, Plex, Prime Video, Universal Guide, Netflix, Apple TV, Steam Link, MyCANAL, Spotify, Molotov, SmartThings, e-Manual, Google Play, Gallery, Rakuten TV, RMC Sport, MYTF1 VOD, Blacknut, Facebook Watch, McAfee Security for TV, OCS, Playzer)<br>
+    - **applist:** (list)(Optional) List of the apps you want in the source drop down menu (YouTube, Plex, Prime Video, Universal Guide, Netflix, Apple TV, Steam Link, MyCANAL, Spotify, Molotov, SmartThings, e-Manual, Google Play, Gallery, Rakuten TV, RMC Sport, MYTF1 VOD, Blacknut, Facebook Watch, McAfee Security for TV, OCS, Playzer)<br>
     
 2. Reboot Home Assistant
 3. Congrats! You're all set!
