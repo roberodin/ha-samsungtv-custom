@@ -127,7 +127,7 @@ service: media_player.play_media
   "media_content_id": "KEY_CODE",
 }
 ```
-**Note**: Change "KEY_CODEKEY" by desired key_code.
+**Note**: Change "KEY_CODE" by desired key_code.
 
 ## Launch application (only for ctl_qled protocol)
 You can use the source droplist or service ``media_player.select_source`` to launch one of the applications of your configuration file.
