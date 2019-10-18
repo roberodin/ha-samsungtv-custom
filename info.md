@@ -10,9 +10,11 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 # Additional Features:
 
-* Ability to send keys using a native Home Assistant service
-* Ability to customize source list at media player dropdown list
-* Ability to change communication protocol from SamsungCtl (HA default) to WS (for 2016+ TVs model)
+* Send keys using a native Home Assistant service
+* Customize source list at media player dropdown list
+* Change communication protocol to cover more TVs models range
+* Launch applications and add them to the source list (only for Qled protocol)
+* Launch streaming of music and video from files (not compatible with HA stream component, only for Qled protocol)
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
@@ -37,10 +39,13 @@ After a correct installation, your configuration directory should look like the 
     └── configuration.yaml
     └── custom_components
         └── samsungtv_custom
+            └── samsungctl_080b
+            └── samsungctl_qled
             └── samsungtvws
             └── __init__.py
             └── media_player.py
             └── manifest.json
+            └── tv-token.txt
     ```
 
 
@@ -48,29 +53,62 @@ After a correct installation, your configuration directory should look like the 
 
 1. Enable the component by editing the configuration.yaml file (within the config directory as well).
 Edit it by adding the following lines:
+    ### Example configuration.yaml for default ctl protocol
     ```
-    # Example configuration.yaml entry
     media_player:
       - platform: samsungtv_custom
         host: IP_ADDRESS
-        port: PORT (8001 or 8002)
+        mac: MAC_ADDRESS
+        port: 8001        
+        sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+    ```
+    ### Example configuration.yaml for ws protocol
+    ```
+    media_player:
+      - platform: samsungtv_custom
+        host: IP_ADDRESS
+        mac: MAC_ADDRESS
+        port: 8002        
+        sourcelist: '{"PlayStation": "KEY_HDMI1"}'
+        protocol: ws
+    ```
+    ### Example configuration.yaml for ctl_beta protocol
+    ```
+    media_player:
+      - platform: samsungtv_custom
+        host: IP_ADDRESS
+        port: 8002
+        mac: MAC_ADDRESS
+        sourcelist: '{"RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+        protocol: ctl_beta
+    ```
+    ### Example configuration.yaml for ctl_qled protocol
+    ```
+    media_player:
+      - platform: samsungtv_custom
+        host: IP_ADDRESS
+        port: 8002
         mac: MAC_ADDRESS
         sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
-        protocol: PROTOCOL (ctl or ws)
+        applist: "YouTube, Apple TV, Plex, Prime Video, Spotify" (only for QLED and similar)
+        protocol: ctl_qled
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component, except for the custom variables.
 
     ### Custom variables
 
-    **sourcelist:**<br/>
-    (json)(Optional)<br/>
-    This contains the visible sources in the dropdown list in media player UI.<br/>
-    Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
+    - **sourcelist:** (json)(Optional) This contains the visible sources in the dropdown list in media player UI.<br>
+    Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br>
 
-    **protocol:**<br/>
-    (string)(Optional)<br/>
-    This determine which communication protocol will be used [ctl or ws]. If it does not work with the default protocol try changing it to the ws.<br/>
-    Default value: ctl<br/>
+    - **protocol:** (string)(Optional) This determine which communication protocol will be used:<br/>
+    Default value: ctl<br>
+    Options:<br>
+    **ctl**: Default HA protocol.<br>
+    **ws**: For 2016+ TVs models.<br>
+    **ctl_beta**: Last beta version of samsungctl.<br>
+    **ctl_qled**: Only for latest TV QLED models and similar.<br>
+
+    - **sourcelist:** (list)(Optional) List of the apps you want in the source drop down menu (YouTube, Plex, Prime Video, Universal Guide, Netflix, Apple TV, Steam Link, MyCANAL, Spotify, Molotov, SmartThings, e-Manual, Google Play, Gallery, Rakuten TV, RMC Sport, MYTF1 VOD, Blacknut, Facebook Watch, McAfee Security for TV, OCS, Playzer)<br>
     
 2. Reboot Home Assistant
 3. Congrats! You're all set!
@@ -91,7 +129,35 @@ service: media_player.play_media
 ```
 **Note**: Change "KEY_CODEKEY" by desired key_code.
 
-Script example:
+## Launch application (only for ctl_qled protocol)
+You can use the source droplist or service ``media_player.select_source`` to launch one of the applications of your configuration file.
+
+To launch an other application you must use the ``media_player.play_media`` service.
+```
+service: media_player.play_media
+```
+```
+{
+  "entity_id": "media_player.samsungtv",
+  "media_content_type": "app",
+  "media_content_id": "Application name",
+}
+```
+**Compatible applications (case sensitive):** YouTube, Plex, Prime Video, Universal Guide, Netflix, Apple TV, Steam Link, MyCANAL, Spotify, Molotov, SmartThings, e-Manual, Google Play, Gallery, Rakuten TV, RMC Sport, MYTF1 VOD, Blacknut, Facebook Watch, McAfee Security for TV, OCS, Playzer.
+
+## Launch media file (only for ctl_qled protocol)
+```
+service: media_player.play_media
+```
+```
+{
+  "entity_id": "media_player.samsungtv",
+  "media_content_type": "url",
+  "media_content_id": "MEDIA_URL",
+}
+```
+
+## Script example:
 ```
 tv_channel_down:
   alias: Channel down
@@ -461,4 +527,6 @@ Please note that some codes are different on the 2016+ TVs. For example, `KEY_PO
 ***References***
 ----------------
 
-The code list has been extracted from: https://github.com/kdschlosser/samsungctl
+The code list has been extracted from: https://github.com/kdschlosser/samsungctl<br>
+ws wrapper protocol from: https://github.com/xchwarze/samsung-tv-ws-api<br>
+Qled integration from: https://github.com/giefca/ha-samsungtv-qled
