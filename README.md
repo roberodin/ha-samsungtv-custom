@@ -12,7 +12,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 * Send keys using a native Home Assistant service
 * Customize source list at media player dropdown list
-* Change communication protocol to cover more TVs models range
+* Change communication protocol to cover more TVs models compatibility
 * Launch applications and add them to the source list (only for Qled protocol)
 * Launch streaming of music and video from files (not compatible with HA stream component, only for Qled protocol)
 
