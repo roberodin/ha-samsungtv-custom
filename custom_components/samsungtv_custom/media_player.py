@@ -46,7 +46,7 @@ from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 
-MEDIA_TYPE_KEY = 'key'
+MEDIA_TYPE_KEY = 'send_key'
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 55000
 DEFAULT_TIMEOUT = 10
