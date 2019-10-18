@@ -59,7 +59,7 @@ Edit it by adding the following lines:
       - platform: samsungtv_custom
         host: IP_ADDRESS
         mac: MAC_ADDRESS
-        port: 8001        
+        port: (8001 or 8002)
         sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
     ```
     ### Example configuration.yaml for ws protocol
@@ -68,7 +68,7 @@ Edit it by adding the following lines:
       - platform: samsungtv_custom
         host: IP_ADDRESS
         mac: MAC_ADDRESS
-        port: 8002        
+        port: (8001 or 8002)
         sourcelist: '{"PlayStation": "KEY_HDMI1"}'
         protocol: ws
     ```
@@ -77,7 +77,7 @@ Edit it by adding the following lines:
     media_player:
       - platform: samsungtv_custom
         host: IP_ADDRESS
-        port: 8002
+        port: (8001 or 8002)
         mac: MAC_ADDRESS
         sourcelist: '{"RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
         protocol: ctl_beta
