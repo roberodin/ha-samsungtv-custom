@@ -12,7 +12,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 * Send keys using a native Home Assistant service
 * Customize source list at media player dropdown list
-* Change communication protocol to cover more TVs models compatibility. Thanks to:
+* Change communication protocol to cover more compatibility TV models. Thanks to:
     - WS protocol from [@xchwarze](https://github.com/xchwarze/ha-samsungtv-custom)
     - Qled protocol from [@giefca](https://github.com/giefca/ha-samsungtv-qled)
     - Ctl beta from [@kdschlosser](https://github.com/kdschlosser/samsungctl)
