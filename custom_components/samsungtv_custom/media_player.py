@@ -26,6 +26,7 @@ from homeassistant.components.media_player.const import (
     SUPPORT_TURN_ON,
     SUPPORT_VOLUME_MUTE,
     SUPPORT_VOLUME_STEP,
+    SUPPORT_VOLUME_SET,
 )
 from homeassistant.const import (
     CONF_HOST,
@@ -43,11 +44,14 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8002
-DEFAULT_TIMEOUT = 5
-KEY_PRESS_TIMEOUT = 1
-KNOWN_DEVICES_KEY = "samsungtv_known_devices"
-SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
+DEFAULT_TIMEOUT = 4
+DEFAULT_UPDATE_METHOD = "default"
+DEFAULT_SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
+CONF_UPDATE_METHOD = "update_method"
 CONF_SOURCELIST = "sourcelist"
+
+KNOWN_DEVICES_KEY = "samsungtv_known_devices"
+KEY_PRESS_TIMEOUT = 0.7
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=2)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
@@ -55,6 +59,7 @@ SUPPORT_SAMSUNGTV = (
     SUPPORT_PAUSE
     | SUPPORT_VOLUME_STEP
     | SUPPORT_VOLUME_MUTE
+    | SUPPORT_VOLUME_SET
     | SUPPORT_PREVIOUS_TRACK
     | SUPPORT_SELECT_SOURCE
     | SUPPORT_NEXT_TRACK
@@ -70,7 +75,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_MAC): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_SOURCELIST): cv.string,
+        vol.Optional(CONF_SOURCELIST): cv.string
+        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
     }
 )
 
@@ -86,7 +92,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     if config.get(CONF_SOURCELIST) is not None:
         sourcelist = json.loads(config.get(CONF_SOURCELIST))
     else:
-        sourcelist = SOURCES
+        sourcelist = DEFAULT_SOURCES
     
     # Is this a manual configuration?
     if config.get(CONF_HOST) is not None:
@@ -95,6 +101,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         name = config.get(CONF_NAME)
         mac = config.get(CONF_MAC)
         timeout = config.get(CONF_TIMEOUT)
+        update_method = config.get(CONF_UPDATE_METHOD)
     elif discovery_info is not None:
         tv_name = discovery_info.get("name")
         model = discovery_info.get("model_name")
@@ -102,6 +109,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         name = f"{tv_name} ({model})"
         port = DEFAULT_PORT
         timeout = DEFAULT_TIMEOUT
+        update_method = DEFAULT_UPDATE_METHOD
         mac = None
         udn = discovery_info.get("udn")
         if udn and udn.startswith("uuid:"):
@@ -115,7 +123,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     ip_addr = socket.gethostbyname(host)
     if ip_addr not in known_devices:
         known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, sourcelist)])
+        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, sourcelist)])
         _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
     else:
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
@@ -124,15 +132,19 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(self, host, port, name, timeout, mac, uuid, sourcelist):
+    def __init__(self, host, port, name, timeout, mac, uuid, update_method, sourcelist):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
         self._name = name
+        self._host = host
         self._mac = mac
+        self._update_method = update_method
         self._uuid = uuid
-        # Assume that the TV is not muted
+        self._is_ws_conection = True if port in (8001, 8002) else False
+        # Assume that the TV is not muted and volume is 0
         self._muted = False
+        self._volume = 0
         # Assume that the TV is in Play mode
         self._playing = True
         self._state = None
@@ -155,7 +167,17 @@ class SamsungTVDevice(MediaPlayerDevice):
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
-        self.send_key("KEY", 1)
+        if self._is_ws_conection and self._update_method == "ping":
+            try:
+                requests.get(
+                    "http://{}:8001/api/v2/".format(self._host),
+                    timeout=0.3
+                )
+                self._state = STATE_ON
+            except:
+                self._state = STATE_OFF
+        else:
+            self.send_key("KEY", 1)
 
     def send_key(self, key, retry_count = 1):
         """Send a key to the tv and handles exceptions."""
@@ -214,7 +236,14 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def is_volume_muted(self):
         """Boolean if volume is currently muted."""
+        self._muted = self._remote.get_mute()
         return self._muted
+
+    @property
+    def volume_level(self):
+        """Volume level of the media player (0..1)."""
+        self._volume = int(self._remote.get_volume()) / 100
+        return str(self._volume)
 
     @property
     def source_list(self):
@@ -251,6 +280,10 @@ class SamsungTVDevice(MediaPlayerDevice):
     def mute_volume(self, mute):
         """Send mute command."""
         self.send_key("KEY_MUTE")
+        
+    def set_volume_level(self, volume):
+        """Set volume level, range 0..1."""
+        self._remote.set_volume(int(volume*100))
 
     def media_play_pause(self):
         """Simulate play pause media player."""
