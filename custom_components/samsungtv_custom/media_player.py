@@ -47,6 +47,7 @@ DEFAULT_TIMEOUT = 4
 DEFAULT_UPDATE_METHOD = "default"
 DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
 CONF_UPDATE_METHOD = "update_method"
+CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
@@ -73,8 +74,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_MAC): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
-        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string
+        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
+        vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
+        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string
     }
 )
 
@@ -95,6 +97,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         mac = config.get(CONF_MAC)
         timeout = config.get(CONF_TIMEOUT)
         update_method = config.get(CONF_UPDATE_METHOD)
+        update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
         source_list = config.get(CONF_SOURCE_LIST)
     elif discovery_info is not None:
         tv_name = discovery_info.get("name")
@@ -104,6 +107,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         port = DEFAULT_PORT
         timeout = DEFAULT_TIMEOUT
         update_method = DEFAULT_UPDATE_METHOD
+        update_custom_ping_url = None
         source_list = DEFAULT_SOURCE_LIST
         mac = None
         udn = discovery_info.get("udn")
@@ -118,7 +122,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     ip_addr = socket.gethostbyname(host)
     if ip_addr not in known_devices:
         known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, source_list)])
+        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list)])
         _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
     else:
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
@@ -127,7 +131,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(self, host, port, name, timeout, mac, uuid, update_method, source_list):
+    def __init__(self, host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
@@ -135,6 +139,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._host = host
         self._mac = mac
         self._update_method = update_method
+        self._update_custom_ping_url = update_custom_ping_url
         self._source_list = json.loads(source_list)
         self._uuid = uuid
         self._is_ws_connection = True if port in (8001, 8002) else False
@@ -162,8 +167,12 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Update state of device."""
         if self._is_ws_connection and self._update_method == "ping":
             try:
+                ping_url = "http://{}:8001/api/v2/".format(self._host)
+                if self._update_custom_ping_url is not None:
+                    ping_url = self._update_custom_ping_url
+
                 requests.get(
-                    "http://{}:8001/api/v2/".format(self._host),
+                    ping_url,
                     timeout=0.3
                 )
                 self._state = STATE_ON
@@ -254,7 +263,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     def turn_off(self):
         """Turn off media player."""
-        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=5)
+        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=10)
 
         if self._is_ws_connection:
             self.send_key("KEY_POWER")
