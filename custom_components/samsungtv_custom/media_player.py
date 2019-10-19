@@ -8,9 +8,9 @@ import voluptuous as vol
 import os
 import wakeonlan
 import websocket
+import requests
 
-# Load WS implementation from plugin folder
-from custom_components.samsungtv_custom.samsungtvws.remote import SamsungTVWS
+from samsungtvws import SamsungTVWS
 
 from homeassistant import util
 from homeassistant.components.media_player import MediaPlayerDevice, PLATFORM_SCHEMA
@@ -26,7 +26,6 @@ from homeassistant.components.media_player.const import (
     SUPPORT_TURN_ON,
     SUPPORT_VOLUME_MUTE,
     SUPPORT_VOLUME_STEP,
-    SUPPORT_VOLUME_SET,
 )
 from homeassistant.const import (
     CONF_HOST,
@@ -43,15 +42,15 @@ from homeassistant.util import dt as dt_util
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Samsung TV Remote"
-DEFAULT_PORT = 8002
+DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 4
 DEFAULT_UPDATE_METHOD = "default"
-DEFAULT_SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
+DEFAULT_SOURCES = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
 CONF_UPDATE_METHOD = "update_method"
 CONF_SOURCELIST = "sourcelist"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
-KEY_PRESS_TIMEOUT = 0.7
+KEY_PRESS_TIMEOUT = 0.5
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=2)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
@@ -59,7 +58,6 @@ SUPPORT_SAMSUNGTV = (
     SUPPORT_PAUSE
     | SUPPORT_VOLUME_STEP
     | SUPPORT_VOLUME_MUTE
-    | SUPPORT_VOLUME_SET
     | SUPPORT_PREVIOUS_TRACK
     | SUPPORT_SELECT_SOURCE
     | SUPPORT_NEXT_TRACK
@@ -75,7 +73,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_MAC): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_SOURCELIST): cv.string
+        vol.Optional(CONF_SOURCELIST, default=DEFAULT_SOURCES): cv.string
         vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
     }
 )
@@ -88,12 +86,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         hass.data[KNOWN_DEVICES_KEY] = known_devices
 
     uuid = None
-    
-    if config.get(CONF_SOURCELIST) is not None:
-        sourcelist = json.loads(config.get(CONF_SOURCELIST))
-    else:
-        sourcelist = DEFAULT_SOURCES
-    
+
     # Is this a manual configuration?
     if config.get(CONF_HOST) is not None:
         host = config.get(CONF_HOST)
@@ -102,6 +95,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         mac = config.get(CONF_MAC)
         timeout = config.get(CONF_TIMEOUT)
         update_method = config.get(CONF_UPDATE_METHOD)
+        source_list = config.get(CONF_SOURCELIST)
     elif discovery_info is not None:
         tv_name = discovery_info.get("name")
         model = discovery_info.get("model_name")
@@ -110,6 +104,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         port = DEFAULT_PORT
         timeout = DEFAULT_TIMEOUT
         update_method = DEFAULT_UPDATE_METHOD
+        source_list = DEFAULT_SOURCES
         mac = None
         udn = discovery_info.get("udn")
         if udn and udn.startswith("uuid:"):
@@ -123,7 +118,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     ip_addr = socket.gethostbyname(host)
     if ip_addr not in known_devices:
         known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, sourcelist)])
+        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, source_list)])
         _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
     else:
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
@@ -132,7 +127,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(self, host, port, name, timeout, mac, uuid, update_method, sourcelist):
+    def __init__(self, host, port, name, timeout, mac, uuid, update_method, source_list):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
@@ -140,19 +135,17 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._host = host
         self._mac = mac
         self._update_method = update_method
+        self._source_list = json.loads(source_list)
         self._uuid = uuid
-        self._is_ws_conection = True if port in (8001, 8002) else False
+        self._is_ws_connection = True if port in (8001, 8002) else False
         # Assume that the TV is not muted and volume is 0
         self._muted = False
-        self._volume = 0
         # Assume that the TV is in Play mode
         self._playing = True
         self._state = None
         # Mark the end of a shutdown command (need to wait 15 seconds before
         # sending the next command to avoid turning the TV back ON).
         self._end_of_power_off = None
-
-        self._sourcelist = sourcelist
 
         token_file = os.path.dirname(os.path.realpath(__file__)) + '/tv-token.txt'
         self._remote = SamsungTVWS(
@@ -167,7 +160,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
-        if self._is_ws_conection and self._update_method == "ping":
+        if self._is_ws_connection and self._update_method == "ping":
             try:
                 requests.get(
                     "http://{}:8001/api/v2/".format(self._host),
@@ -236,14 +229,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def is_volume_muted(self):
         """Boolean if volume is currently muted."""
-        self._muted = self._remote.get_mute()
         return self._muted
-
-    @property
-    def volume_level(self):
-        """Volume level of the media player (0..1)."""
-        self._volume = int(self._remote.get_volume()) / 100
-        return str(self._volume)
 
     @property
     def source_list(self):
@@ -280,10 +266,6 @@ class SamsungTVDevice(MediaPlayerDevice):
     def mute_volume(self, mute):
         """Send mute command."""
         self.send_key("KEY_MUTE")
-        
-    def set_volume_level(self, volume):
-        """Set volume level, range 0..1."""
-        self._remote.set_volume(int(volume*100))
 
     def media_play_pause(self):
         """Simulate play pause media player."""
