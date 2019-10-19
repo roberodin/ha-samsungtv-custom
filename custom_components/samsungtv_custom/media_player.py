@@ -73,8 +73,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_MAC): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_SOURCELIST, default=DEFAULT_SOURCES): cv.string
-        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
+        vol.Optional(CONF_SOURCELIST, default=DEFAULT_SOURCES): cv.string,
+        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string
     }
 )
 
@@ -234,7 +234,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def source_list(self):
         """List of available input sources."""
-        return list(self._sourcelist)
+        return list(self._source_list)
 
     @property
     def supported_features(self):
@@ -322,8 +322,8 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     async def async_select_source(self, source):
         """Select input source."""
-        if source not in SOURCES:
+        if source not in self._source_list:
             _LOGGER.error("Unsupported source")
             return
 
-        await self.hass.async_add_job(self.send_key, SOURCES[source])
+        await self.hass.async_add_job(self.send_key, self._source_list[source])
