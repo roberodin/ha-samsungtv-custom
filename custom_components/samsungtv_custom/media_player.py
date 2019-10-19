@@ -45,13 +45,13 @@ DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 4
 DEFAULT_UPDATE_METHOD = "default"
-DEFAULT_SOURCES = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
+DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
 CONF_UPDATE_METHOD = "update_method"
-CONF_SOURCELIST = "sourcelist"
+CONF_SOURCE_LIST = "source_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 KEY_PRESS_TIMEOUT = 0.5
-MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=2)
+MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
 SUPPORT_SAMSUNGTV = (
@@ -73,7 +73,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_MAC): cv.string,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_SOURCELIST, default=DEFAULT_SOURCES): cv.string,
+        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
         vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string
     }
 )
@@ -95,7 +95,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         mac = config.get(CONF_MAC)
         timeout = config.get(CONF_TIMEOUT)
         update_method = config.get(CONF_UPDATE_METHOD)
-        source_list = config.get(CONF_SOURCELIST)
+        source_list = config.get(CONF_SOURCE_LIST)
     elif discovery_info is not None:
         tv_name = discovery_info.get("name")
         model = discovery_info.get("model_name")
@@ -104,7 +104,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         port = DEFAULT_PORT
         timeout = DEFAULT_TIMEOUT
         update_method = DEFAULT_UPDATE_METHOD
-        source_list = DEFAULT_SOURCES
+        source_list = DEFAULT_SOURCE_LIST
         mac = None
         udn = discovery_info.get("udn")
         if udn and udn.startswith("uuid:"):
@@ -244,10 +244,22 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         return SUPPORT_SAMSUNGTV
 
+    def turn_on(self):
+        """Turn the media player on."""
+        if self._mac:
+            wakeonlan.send_magic_packet(self._mac)
+            self._state = STATE_ON
+        else:
+            self.send_key("KEY_POWERON")
+
     def turn_off(self):
         """Turn off media player."""
-        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=15)
-        self.send_key("KEY_POWER")
+        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=5)
+
+        if self._is_ws_connection:
+            self.send_key("KEY_POWER")
+        else:
+            self.send_key("KEY_POWEROFF")
 
         # Force closing of remote session to provide instant UI feedback
         try:
@@ -306,19 +318,13 @@ class SamsungTVDevice(MediaPlayerDevice):
             for digit in media_id:
                 await self.hass.async_add_job(self.send_key, "KEY_" + digit)
                 await asyncio.sleep(KEY_PRESS_TIMEOUT, self.hass.loop)
+
             await self.hass.async_add_job(self.send_key, "KEY_ENTER")
         elif media_type == "send_key":
             self.send_key(media_id)
         else:
             _LOGGER.error("Unsupported media type")
             return
-
-    def turn_on(self):
-        """Turn the media player on."""
-        if self._mac:
-            wakeonlan.send_magic_packet(self._mac)
-        else:
-            self.send_key("KEY_POWERON")
 
     async def async_select_source(self, source):
         """Select input source."""
