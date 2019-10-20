@@ -53,6 +53,7 @@ CONF_SOURCE_LIST = "source_list"
 CONF_APP_LIST = "app_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
+MEDIA_TYPE_KEY = "send_key"
 KEY_PRESS_TIMEOUT = 0.5
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
@@ -185,19 +186,24 @@ class SamsungTVDevice(MediaPlayerDevice):
             except:
                 self._state = STATE_OFF
         else:
-            self.send_key("KEY", 1)
+            self.send_command("KEY")
 
-    def send_key(self, key, retry_count = 1):
+    def send_command(self, payload, command_type = "send_key", retry_count = 1):
         """Send a key to the tv and handles exceptions."""
-        if self._power_off_in_progress() and key not in ("KEY_POWER", "KEY_POWEROFF"):
-            _LOGGER.info("TV is powering off, not sending command: %s", key)
+        if self._power_off_in_progress() and payload not in ("KEY_POWER", "KEY_POWEROFF"):
+            _LOGGER.info("TV is powering off, not sending command: %s", payload)
             return
 
         try:
             # recreate connection if connection was dead
             for _ in range(retry_count + 1):
                 try:
-                    self._remote.send_key(key)
+                    if command_type == "run_app":
+                        #run_app(self, app_id, app_type='DEEP_LINK', meta_tag='')
+                        self._remote.run_app(payload)
+                    else:
+                        self._remote.send_key(payload)
+
                     break
                 except (
                     ConnectionResetError, 
@@ -211,7 +217,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             # We got a response so it's on.
             self._state = STATE_ON
             self._remote.close()
-            _LOGGER.debug("Failed sending command %s", key, exc_info=True)
+            _LOGGER.debug("Failed sending payload %s command_type %s", payload, command_type, exc_info=True)
 
         except OSError:
             self._state = STATE_OFF
@@ -225,6 +231,20 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._end_of_power_off is not None
             and self._end_of_power_off > dt_util.utcnow()
         )
+
+    def _gen_installed_app_list(self):
+        app_list = self._remote.app_list()
+
+        # app_list is a list of dict
+        clean_app_list = {}
+        for i in range(len(app_list)):
+            try:
+                app = app_list[i]
+                clean_app_list[ app.get('name') ] = app.get('appId')
+            except Exception:
+                pass
+
+        self._app_list = clean_app_list
 
     @property
     def unique_id(self) -> str:
@@ -249,11 +269,14 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def source_list(self):
         """List of available input sources."""
-        #source_list = ['TV/HDMI']
-        #source_list.extend(list(self._source_list))
-        #source_list.extend(list(self._app_list))
-        #return source_list
-        return list(self._source_list)
+        if self._app_list is None:
+            self._gen_installed_app_list()
+
+        source_list = []
+        source_list.extend(list(self._source_list))
+        source_list.extend(list(self._app_list))
+
+        return source_list
 
     @property
     def supported_features(self):
@@ -269,16 +292,16 @@ class SamsungTVDevice(MediaPlayerDevice):
             wakeonlan.send_magic_packet(self._mac)
             self._state = STATE_ON
         else:
-            self.send_key("KEY_POWERON")
+            self.send_command("KEY_POWERON")
 
     def turn_off(self):
         """Turn off media player."""
         self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=10)
 
         if self._is_ws_connection:
-            self.send_key("KEY_POWER")
+            self.send_command("KEY_POWER")
         else:
-            self.send_key("KEY_POWEROFF")
+            self.send_command("KEY_POWEROFF")
 
         # Force closing of remote session to provide instant UI feedback
         try:
@@ -288,15 +311,15 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     def volume_up(self):
         """Volume up the media player."""
-        self.send_key("KEY_VOLUP")
+        self.send_command("KEY_VOLUP")
 
     def volume_down(self):
         """Volume down media player."""
-        self.send_key("KEY_VOLDOWN")
+        self.send_command("KEY_VOLDOWN")
 
     def mute_volume(self, mute):
         """Send mute command."""
-        self.send_key("KEY_MUTE")
+        self.send_command("KEY_MUTE")
 
     def media_play_pause(self):
         """Simulate play pause media player."""
@@ -308,24 +331,25 @@ class SamsungTVDevice(MediaPlayerDevice):
     def media_play(self):
         """Send play command."""
         self._playing = True
-        self.send_key("KEY_PLAY")
+        self.send_command("KEY_PLAY")
 
     def media_pause(self):
         """Send media pause command to media player."""
         self._playing = False
-        self.send_key("KEY_PAUSE")
+        self.send_command("KEY_PAUSE")
 
     def media_next_track(self):
         """Send next track command."""
-        self.send_key("KEY_FF")
+        self.send_command("KEY_FF")
 
     def media_previous_track(self):
         """Send the previous track command."""
-        self.send_key("KEY_REWIND")
+        self.send_command("KEY_REWIND")
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Support changing a channel."""
 
+        # Type channel
         if media_type == MEDIA_TYPE_CHANNEL:
             try:
                 cv.positive_int(media_id)
@@ -334,13 +358,23 @@ class SamsungTVDevice(MediaPlayerDevice):
                 return
     
             for digit in media_id:
-                await self.hass.async_add_job(self.send_key, "KEY_" + digit)
-                await asyncio.sleep(KEY_PRESS_TIMEOUT, self.hass.loop)
+                await self.hass.async_add_job(self.send_command, "KEY_" + digit)
 
-            await self.hass.async_add_job(self.send_key, "KEY_ENTER")
+            await self.hass.async_add_job(self.send_command, "KEY_ENTER")
 
-        elif media_type == "send_key":
-            self.send_key(media_id)
+        # Launch an app
+        elif media_type == MEDIA_TYPE_APP:
+            await self.hass.async_add_job(self.send_command, media_id, "run_app")
+
+        # Send custom key
+        elif media_type == MEDIA_TYPE_KEY:
+            try:
+                cv.string(media_id)
+            except vol.Invalid:
+                _LOGGER.error('Media ID must be a string (ex: "KEY_HOME"')
+                return
+
+            await self.hass.async_add_job(self.send_command, media_id)
 
         else:
             _LOGGER.error("Unsupported media type")
@@ -348,8 +382,9 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     async def async_select_source(self, source):
         """Select input source."""
-        if source not in self._source_list:
+        if source in self._source_list:
+            await self.hass.async_add_job(self.send_command, self._source_list[ source ])
+        elif source in self._app_list:
+            await self.hass.async_add_job(self.send_command, self._app_list[ source ], "run_app")
+        else:
             _LOGGER.error("Unsupported source")
-            return
-
-        await self.hass.async_add_job(self.send_key, self._source_list[source])
