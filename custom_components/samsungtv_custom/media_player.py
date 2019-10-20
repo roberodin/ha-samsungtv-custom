@@ -26,6 +26,7 @@ from homeassistant.components.media_player.const import (
     SUPPORT_TURN_ON,
     SUPPORT_VOLUME_MUTE,
     SUPPORT_VOLUME_STEP,
+    MEDIA_TYPE_APP,
 )
 from homeassistant.const import (
     CONF_HOST,
@@ -49,6 +50,7 @@ DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
 CONF_UPDATE_METHOD = "update_method"
 CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
+CONF_APP_LIST = "app_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 KEY_PRESS_TIMEOUT = 0.5
@@ -76,7 +78,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
         vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
         vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
-        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string
+        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
+        vol.Optional(CONF_APP_LIST): cv.string
     }
 )
 
@@ -99,6 +102,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         update_method = config.get(CONF_UPDATE_METHOD)
         update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
         source_list = config.get(CONF_SOURCE_LIST)
+        app_list = config.get(CONF_APP_LIST)
     elif discovery_info is not None:
         tv_name = discovery_info.get("name")
         model = discovery_info.get("model_name")
@@ -109,6 +113,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         update_method = DEFAULT_UPDATE_METHOD
         update_custom_ping_url = None
         source_list = DEFAULT_SOURCE_LIST
+        app_list = None
         mac = None
         udn = discovery_info.get("udn")
         if udn and udn.startswith("uuid:"):
@@ -122,7 +127,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     ip_addr = socket.gethostbyname(host)
     if ip_addr not in known_devices:
         known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list)])
+        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list, app_list)])
         _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
     else:
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
@@ -131,7 +136,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(self, host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list):
+    def __init__(self, host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list, app_list):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
@@ -141,6 +146,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._update_method = update_method
         self._update_custom_ping_url = update_custom_ping_url
         self._source_list = json.loads(source_list)
+        self._app_list = json.loads(app_list)
         self._uuid = uuid
         self._is_ws_connection = True if port in (8001, 8002) else False
         # Assume that the TV is not muted and volume is 0
@@ -152,7 +158,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         # sending the next command to avoid turning the TV back ON).
         self._end_of_power_off = None
 
-        token_file = os.path.dirname(os.path.realpath(__file__)) + '/tv-token.txt'
+        token_file = os.path.dirname(os.path.realpath(__file__)) + '/token-' + host + '.txt'
         self._remote = SamsungTVWS(
             name=name,
             host=host,
@@ -243,6 +249,10 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def source_list(self):
         """List of available input sources."""
+        #source_list = ['TV/HDMI']
+        #source_list.extend(list(self._source_list))
+        #source_list.extend(list(self._app_list))
+        #return source_list
         return list(self._source_list)
 
     @property
@@ -317,7 +327,6 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Support changing a channel."""
 
         if media_type == MEDIA_TYPE_CHANNEL:
-        # media_id should only be a channel number
             try:
                 cv.positive_int(media_id)
             except vol.Invalid:
@@ -329,8 +338,10 @@ class SamsungTVDevice(MediaPlayerDevice):
                 await asyncio.sleep(KEY_PRESS_TIMEOUT, self.hass.loop)
 
             await self.hass.async_add_job(self.send_key, "KEY_ENTER")
+
         elif media_type == "send_key":
             self.send_key(media_id)
+
         else:
             _LOGGER.error("Unsupported media type")
             return
