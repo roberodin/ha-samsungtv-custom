@@ -146,7 +146,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._update_method = update_method
         self._update_custom_ping_url = update_custom_ping_url
         self._source_list = json.loads(source_list)
-        self._app_list = json.loads(app_list)
+        self._app_list = json.loads(app_list) if app_list is not None else None
         self._uuid = uuid
         self._is_ws_connection = True if port in (8001, 8002) else False
         # Assume that the TV is not muted and volume is 0
