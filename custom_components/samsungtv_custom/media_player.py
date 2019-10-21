@@ -55,6 +55,7 @@ CONF_APP_LIST = "app_list"
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
 KEY_PRESS_TIMEOUT = 0.5
+UPDATE_PING_TIMEOUT = 1
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
@@ -180,7 +181,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
                 requests.get(
                     ping_url,
-                    timeout=0.3
+                    timeout=UPDATE_PING_TIMEOUT
                 )
                 self._state = STATE_ON
             except:
@@ -192,7 +193,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Send a key to the tv and handles exceptions."""
         if self._power_off_in_progress() and payload not in ("KEY_POWER", "KEY_POWEROFF"):
             _LOGGER.info("TV is powering off, not sending command: %s", payload)
-            return
+            return False
 
         try:
             # recreate connection if connection was dead
@@ -211,6 +212,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                     BrokenPipeError
                 ):
                     self._remote.close()
+                    _LOGGER.debug("Error in send_command() -> ConnectionResetError/AttributeError/BrokenPipeError")
 
             self._state = STATE_ON
         except websocket._exceptions.WebSocketTimeoutException:
@@ -222,9 +224,12 @@ class SamsungTVDevice(MediaPlayerDevice):
         except OSError:
             self._state = STATE_OFF
             self._remote.close()
+            _LOGGER.debug("Error in send_command() -> OSError")
 
         if self._power_off_in_progress():
             self._state = STATE_OFF
+
+        return True
 
     def _power_off_in_progress(self):
         return (
@@ -245,6 +250,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 pass
 
         self._app_list = clean_app_list
+        _LOGGER.debug("Gen installed app_list %s", clean_app_list)
 
     @property
     def unique_id(self) -> str:
@@ -290,13 +296,16 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Turn the media player on."""
         if self._mac:
             wakeonlan.send_magic_packet(self._mac)
-            self._state = STATE_ON
+            self.update()
         else:
             self.send_command("KEY_POWERON")
 
+        #self.hass.async_add_job(self.update)
+
     def turn_off(self):
         """Turn off media player."""
-        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=10)
+        # In my tests if _end_of_power_off < 15 WS ping method randomly fail!!!
+        self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=15)
 
         if self._is_ws_connection:
             self.send_command("KEY_POWER")
