@@ -142,8 +142,9 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
-        self._name = name
         self._host = host
+        self._name = name
+        self._timeout = timeout
         self._mac = mac
         self._update_method = update_method
         self._update_custom_ping_url = update_custom_ping_url
@@ -159,23 +160,55 @@ class SamsungTVDevice(MediaPlayerDevice):
         # Mark the end of a shutdown command (need to wait 15 seconds before
         # sending the next command to avoid turning the TV back ON).
         self._end_of_power_off = None
+        self._token_file = None
 
-        token_file = None
+        # Generate token file only for WS + SSL + Token connection
         if port == 8002:
-            token_file = os.path.dirname(os.path.realpath(__file__)) + '/token-' + host + '.txt'
-
-            # For correct set of auth token
-            if os.path.isfile(token_file) is False:
-                timeout = 30
+            self._gen_token_file()
 
         self._remote = SamsungTVWS(
             name=name,
             host=host,
             port=port,
-            timeout=timeout,
+            timeout=self._timeout,
             key_press_delay=KEY_PRESS_TIMEOUT,
-            token_file=token_file
+            token_file=self._token_file
         )
+
+    def _gen_token_file(self):
+        self._token_file = os.path.dirname(os.path.realpath(__file__)) + '/token-' + self._host + '.txt'
+
+        if os.path.isfile(self._token_file) is False:
+            # For correct auth
+            self.timeout = 30
+
+            # Create token file for catch possible errors
+            try :
+                handle = open(self._token_file, "w+")
+                handle.close()
+            except:
+                _LOGGER.error("Samsung TV - Error creating token file: %s", self._token_file)
+
+    def _power_off_in_progress(self):
+        return (
+            self._end_of_power_off is not None
+            and self._end_of_power_off > dt_util.utcnow()
+        )
+
+    def _gen_installed_app_list(self):
+        app_list = self._remote.app_list()
+
+        # app_list is a list of dict
+        clean_app_list = {}
+        for i in range(len(app_list)):
+            try:
+                app = app_list[i]
+                clean_app_list[ app.get('name') ] = app.get('appId')
+            except Exception:
+                pass
+
+        self._app_list = clean_app_list
+        _LOGGER.debug("Gen installed app_list %s", clean_app_list)
 
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
@@ -237,27 +270,6 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._state = STATE_OFF
 
         return True
-
-    def _power_off_in_progress(self):
-        return (
-            self._end_of_power_off is not None
-            and self._end_of_power_off > dt_util.utcnow()
-        )
-
-    def _gen_installed_app_list(self):
-        app_list = self._remote.app_list()
-
-        # app_list is a list of dict
-        clean_app_list = {}
-        for i in range(len(app_list)):
-            try:
-                app = app_list[i]
-                clean_app_list[ app.get('name') ] = app.get('appId')
-            except Exception:
-                pass
-
-        self._app_list = clean_app_list
-        _LOGGER.debug("Gen installed app_list %s", clean_app_list)
 
     @property
     def unique_id(self) -> str:
