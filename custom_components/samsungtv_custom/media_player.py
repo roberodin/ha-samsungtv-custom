@@ -44,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
-DEFAULT_TIMEOUT = 4
+DEFAULT_TIMEOUT = 3
 DEFAULT_UPDATE_METHOD = "default"
 DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
 CONF_UPDATE_METHOD = "update_method"
@@ -195,6 +195,26 @@ class SamsungTVDevice(MediaPlayerDevice):
             and self._end_of_power_off > dt_util.utcnow()
         )
 
+    def _ping_device(self):
+        # HTTP ping
+        if self._is_ws_connection and self._update_method == "ping":
+            try:
+                ping_url = "http://{}:8001/api/v2/".format(self._host)
+                if self._update_custom_ping_url is not None:
+                    ping_url = self._update_custom_ping_url
+
+                requests.get(
+                    ping_url,
+                    timeout=UPDATE_PING_TIMEOUT
+                )
+                self._state = STATE_ON
+            except:
+                self._state = STATE_OFF
+
+        # WS ping
+        else:
+            self.send_command("KEY")
+
     def _gen_installed_app_list(self):
         app_list = self._remote.app_list()
 
@@ -213,21 +233,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
-        if self._is_ws_connection and self._update_method == "ping":
-            try:
-                ping_url = "http://{}:8001/api/v2/".format(self._host)
-                if self._update_custom_ping_url is not None:
-                    ping_url = self._update_custom_ping_url
-
-                requests.get(
-                    ping_url,
-                    timeout=UPDATE_PING_TIMEOUT
-                )
-                self._state = STATE_ON
-            except:
-                self._state = STATE_OFF
-        else:
-            self.send_command("KEY")
+        self._ping_device()
 
     def send_command(self, payload, command_type = "send_key", retry_count = 1):
         """Send a key to the tv and handles exceptions."""
@@ -314,12 +320,15 @@ class SamsungTVDevice(MediaPlayerDevice):
     def turn_on(self):
         """Turn the media player on."""
         if self._mac:
+            if self._power_off_in_progress():
+                _LOGGER.info("TV is powering off, not sending WOL")
+                return
+
             wakeonlan.send_magic_packet(self._mac)
-            self.update()
+            #time.sleep(2)
+            self._ping_device()
         else:
             self.send_command("KEY_POWERON")
-
-        #self.hass.async_add_job(self.update)
 
     def turn_off(self):
         """Turn off media player."""
