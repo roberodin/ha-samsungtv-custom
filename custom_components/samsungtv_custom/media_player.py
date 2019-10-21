@@ -160,7 +160,14 @@ class SamsungTVDevice(MediaPlayerDevice):
         # sending the next command to avoid turning the TV back ON).
         self._end_of_power_off = None
 
-        token_file = os.path.dirname(os.path.realpath(__file__)) + '/token-' + host + '.txt'
+        token_file = None
+        if port == 8002:
+            token_file = os.path.dirname(os.path.realpath(__file__)) + '/token-' + host + '.txt'
+
+            # For correct set of auth token
+            if os.path.isfile(token_file) is False:
+                timeout = 30
+
         self._remote = SamsungTVWS(
             name=name,
             host=host,
