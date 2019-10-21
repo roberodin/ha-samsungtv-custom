@@ -55,16 +55,32 @@ Edit it by adding the following lines:
         host: IP_ADDRESS
         port: PORT (8001 or 8002)
         mac: MAC_ADDRESS
-        sourcelist: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+        source_list: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+        app_list: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
 
     ### Custom configuration variables
 
-    **sourcelist:**<br/>
+    **update_method:**<br/>
     (json)(Optional)<br/>
-    This contains the visible sources in the dropdown list in media player UI.<br/>
+    This change the ping method used for state update. Values: "default" and "ping"<br/>
+    Default value: "default"<br/>
+    
+    **update_custom_ping_url:**<br/>
+    (json)(Optional)<br/>
+    Use custom endpoint to ping.<br/>
+    Default value: PING TO 8001 ENDPOINT<br/>
+    
+    **source_list:**<br/>
+    (json)(Optional)<br/>
+    This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
     Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
+    
+    **app_list:**<br/>
+    (json)(Optional)<br/>
+    This contains the APPS visible sources in the dropdown list in media player UI.<br/>
+    Default value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
 
 2. Reboot Home Assistant
 3. Congrats! You're all set!
