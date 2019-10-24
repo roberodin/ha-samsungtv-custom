@@ -9,6 +9,7 @@ import os
 import wakeonlan
 import websocket
 import requests
+import time
 
 from samsungtvws import SamsungTVWS
 
@@ -325,7 +326,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 return
 
             wakeonlan.send_magic_packet(self._mac)
-            #time.sleep(2)
+            time.sleep(2)
             self._ping_device()
         else:
             self.send_command("KEY_POWERON")
