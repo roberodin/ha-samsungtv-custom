@@ -217,7 +217,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self.send_command("KEY")
 
     def _gen_installed_app_list(self):
-        if self._state == STATE_OFF
+        if self._state == STATE_OFF:
             _LOGGER.info("Samsung TV is OFF, _gen_installed_app_list not executed")
             self._app_list = {}
 
