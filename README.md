@@ -74,8 +74,8 @@ Edit it by adding the following lines:
     
     **source_list:**<br/>
     (json)(Optional)<br/>
-    This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
-    Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
+    This contains the KEYS visible sources in the dropdown list in media player UI. KEY_HDMI_FIX is a emulate double KEY_HDMI send.<br/>
+    Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI_FIX"}'<br/>
     Example value: '{"PlayStation": "KEY_HDMI1", "RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'<br/>
     
     **app_list:**<br/>
