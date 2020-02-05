@@ -47,7 +47,7 @@ DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 3
 DEFAULT_UPDATE_METHOD = "default"
-DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
+DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI_FIX"}'
 CONF_UPDATE_METHOD = "update_method"
 CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
@@ -55,7 +55,7 @@ CONF_APP_LIST = "app_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
-KEY_PRESS_TIMEOUT = 0.5
+KEY_PRESS_TIMEOUT = 0.9
 UPDATE_PING_TIMEOUT = 1
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
@@ -254,7 +254,14 @@ class SamsungTVDevice(MediaPlayerDevice):
                         #run_app(self, app_id, app_type='DEEP_LINK', meta_tag='')
                         self._remote.run_app(payload)
                     else:
-                        self._remote.send_key(payload)
+                        repeat = 1
+
+                        # fix KEY_HDMI ws error
+                        if payload == "KEY_HDMI_FIX":
+                            payload = "KEY_HDMI"
+                            repeat = 2
+
+                        self._remote.send_key(payload, repeat)
 
                     break
                 except (
@@ -317,7 +324,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def supported_features(self):
         """Flag media player features that are supported."""
-        return SUPPORT_SAMSUNGTV
+        return SUPPORT_SAMSUNGTV | SUPPORT_TURN_ON
 
     def turn_on(self):
         """Turn the media player on."""
