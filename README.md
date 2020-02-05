@@ -87,6 +87,17 @@ Edit it by adding the following lines:
 2. Reboot Home Assistant
 3. Congrats! You're all set!
 
+# Debug
+
+1. For enable debug edit configuration.yaml and add this:
+    ```
+logger:
+  default: info
+  logs:
+    custom_components.samsungtv_custom.media_player: debug
+    ```
+    **Note**: Gen installed app_list is saved as DEBUG info. Use this info for create a custom app_list.
+
 # Usage
 
 ### Send Keys
