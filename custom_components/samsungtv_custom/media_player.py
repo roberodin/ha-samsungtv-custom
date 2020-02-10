@@ -181,7 +181,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         if os.path.isfile(self._token_file) is False:
             # For correct auth
-            self.timeout = 30
+            self._timeout = 30
 
             # Create token file for catch possible errors
             try :
