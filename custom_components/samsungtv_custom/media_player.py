@@ -398,13 +398,16 @@ class SamsungTVDevice(MediaPlayerDevice):
         # Type channel
         if media_type == MEDIA_TYPE_CHANNEL:
             try:
-                cv.positive_int(media_id)
+                cv.positive_int(media_id.replace("-", "", 1))
+                # Hyphen must be between numbers
+                if media_id.startswith("-") or media_id.endswith("-"):
+                    raise vol.Invalid("")
             except vol.Invalid:
-                _LOGGER.error("Media ID must be positive integer")
+                _LOGGER.error("Media ID must be channel with optional sub-channel, separated by a hyphen (ex. 20-2)")
                 return
-    
+
             for digit in media_id:
-                await self.hass.async_add_job(self.send_command, "KEY_" + digit)
+                await self.hass.async_add_job(self.send_command, "KEY_PLUS100" if digit == "-" else "KEY_" + digit)
 
             await self.hass.async_add_job(self.send_command, "KEY_ENTER")
 
