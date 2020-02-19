@@ -45,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
-DEFAULT_TIMEOUT = 3
+DEFAULT_TIMEOUT = 1.5
 DEFAULT_UPDATE_METHOD = "default"
 DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI_FIX"}'
 CONF_UPDATE_METHOD = "update_method"
@@ -55,7 +55,7 @@ CONF_APP_LIST = "app_list"
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
-KEY_PRESS_TIMEOUT = 0.9
+KEY_PRESS_TIMEOUT = 0.3
 UPDATE_PING_TIMEOUT = 1
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
@@ -181,7 +181,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         if os.path.isfile(self._token_file) is False:
             # For correct auth
-            self._timeout = 30
+            self._timeout = 45
 
             # Create token file for catch possible errors
             try :
@@ -214,7 +214,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         # WS ping
         else:
-            self.send_command("KEY")
+            self.send_command("KEY", 1, 0)
 
     def _gen_installed_app_list(self):
         if self._state == STATE_OFF:
@@ -254,14 +254,14 @@ class SamsungTVDevice(MediaPlayerDevice):
                         #run_app(self, app_id, app_type='DEEP_LINK', meta_tag='')
                         self._remote.run_app(payload)
                     else:
-                        repeat = 1
+                        times = 1
 
                         # fix KEY_HDMI ws error
                         if payload == "KEY_HDMI_FIX":
                             payload = "KEY_HDMI"
-                            repeat = 2
+                            times = 2
 
-                        self._remote.send_key(payload, repeat)
+                        self._remote.send_key(payload, times, 1)
 
                     break
                 except (
