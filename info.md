@@ -82,6 +82,20 @@ Edit it by adding the following lines:
         sourcelist: '{"RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
         protocol: ctl_beta
     ```
+    ### Example configuration.yaml for ctl_beta protocol for H/J Models
+    ```
+     media_player:
+       - platform: samsungtv_custom
+         host: IP_ADDRESS
+         port: (8001 or 8002)
+         mac: MAC_ADDRESS
+         sourcelist: '{"RaspberryPi": "KEY_HDMI2", "Chromecast": "KEY_HDMI3"}'
+         protocol: ctl_beta
+         token: kdsjfbsdkjbsdkjfskdjf:2
+         id: 07270e01-0078-1000-8cd0-c4576e9dxxxxx
+    ```
+    The token get be fetched via https://github.com/eclair4151/SmartCrypto
+    The id can be fetched vie http://IP_ADDRESS:8001/api/v2/
     ### Example configuration.yaml for ctl_qled protocol
     ```
     media_player:
