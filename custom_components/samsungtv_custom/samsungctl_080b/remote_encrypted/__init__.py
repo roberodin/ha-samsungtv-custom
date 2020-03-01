@@ -25,7 +25,7 @@ from .. import websocket_base # NOQA
 from ..upnp.UPNP_Device.xmlns import strip_xmlns # NOQA
 from ..utils import LogIt, LogItWithReturn # NOQA
 
-logger = logging.getLogger('samsungctl')
+logger = logging.getLogger(__name__)
 
 
 class URL(object):

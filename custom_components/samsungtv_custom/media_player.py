@@ -212,8 +212,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 _LOGGER.debug("State is on %s", repr(r))
                 # break
             except:
-                e = sys.exc_info()[0]
-                _LOGGER.debug("State is off %s", repr(e))
+                _LOGGER.debug("State is off")
                 self._state = STATE_OFF
 
         else:
