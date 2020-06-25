@@ -12,7 +12,7 @@ import time
 import requests
 
 from homeassistant import util
-from homeassistant.components.media_player import MediaPlayerDevice, PLATFORM_SCHEMA
+from homeassistant.components.media_player import MediaPlayerEntity, PLATFORM_SCHEMA
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
     SUPPORT_NEXT_TRACK,
@@ -149,7 +149,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
 
 
-class SamsungTVDevice(MediaPlayerDevice):
+class SamsungTVDevice(MediaPlayerEntity):
     """Representation of a Samsung TV."""
 
     def __init__(self, host, port, name, timeout, mac, uuid, sourcelist, protocol):
@@ -359,7 +359,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         await self.hass.async_add_job(self.send_key, self._sourcelist[source])
 
 
-class SamsungTVDeviceQLED(MediaPlayerDevice):
+class SamsungTVDeviceQLED(MediaPlayerEntity):
     """Representation of a Samsung TV."""
 
     def __init__(self, host, port, name, timeout, mac, uuid, sourcelist, applist):
@@ -692,7 +692,7 @@ class SamsungTVDeviceQLED(MediaPlayerDevice):
         return self.hass.async_add_job(self.select_source, source) 
         
 
-class SamsungTVDeviceWS(MediaPlayerDevice):
+class SamsungTVDeviceWS(MediaPlayerEntity):
     """Representation of a Samsung TV."""
 
     def __init__(self, host, port, name, timeout, mac, uuid, sourcelist):
