@@ -257,7 +257,7 @@ class WebSocketBase(UPNPTV):
 
             elif self.sock is None:
                 logger.info(
-                    self.config.model +
+                    self.config.host +
                     ' -- is the TV on?!?'
                 )
                 return False
