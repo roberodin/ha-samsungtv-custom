@@ -12,7 +12,11 @@ import time
 import requests
 
 from homeassistant import util
-from homeassistant.components.media_player import MediaPlayerEntity, PLATFORM_SCHEMA
+from homeassistant.components.media_player import (
+    MediaPlayerEntity,
+    PLATFORM_SCHEMA,
+    DEVICE_CLASS_TV,
+)
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
     SUPPORT_NEXT_TRACK,
@@ -38,8 +42,10 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PORT,
     CONF_TIMEOUT,
+    CONF_ID,
+    CONF_TOKEN,
     STATE_OFF,
-    STATE_ON,
+    STATE_ON
 )
 import homeassistant.helpers.config_validation as cv
 from homeassistant.util import dt as dt_util
@@ -49,14 +55,16 @@ _LOGGER = logging.getLogger(__name__)
 MEDIA_TYPE_KEY = "send_key"
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 55000
-DEFAULT_TIMEOUT = 2
-KEY_PRESS_TIMEOUT = 1.2
+DEFAULT_TIMEOUT = 1.5
+KEY_PRESS_TIMEOUT = 0.3
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 CONF_SOURCELIST = "sourcelist"
 CONF_APPLIST = "applist"
 CONF_PROTOCOL = "protocol"
-MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=2)
+CONF_ID = ""
+CONF_TOKEN = ""
+MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
 SUPPORT_SAMSUNGTV = (
