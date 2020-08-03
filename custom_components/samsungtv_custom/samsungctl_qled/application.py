@@ -26,7 +26,8 @@ APPS = {'YouTube': '111299001912',
         'Facebook Watch': '11091000000',
         'McAfee Security for TV': '3201612011418',
         'OCS': '3201703012029',
-        'Playzer': '3201810017091'
+        'Playzer': '3201810017091',
+        'Viaplay': '11111300404'
         }
 
 
