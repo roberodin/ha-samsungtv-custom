@@ -460,7 +460,24 @@ class SamsungTVDeviceQLED(MediaPlayerEntity):
                 self._state = STATE_OFF
         else:
             self.send_key("KEY")
+        
+         """Boolean if volume is currently muted."""
+        if self._config["port"] == 8002:
+            self._upnp = self.get_upnp()
+            self._muted = self._upnp.get_mute()
 
+        """Volume level of the media player (0..1)."""
+        if self._config["port"] == 8002:
+            self._upnp = self.get_upnp()
+            self._volume = int(self._upnp.get_volume()) / 100
+        
+         """Name of the current input source."""
+        if self._config['port'] in (8001,8002):
+            self._application = self.get_application()
+            if self._application.current_app() is None:
+                self._current_source = 'TV/HDMI'
+            else:
+                self._current_source = self._application.current_app()
 
     def get_remote(self):
         """Create or return a remote control instance."""
@@ -543,35 +560,18 @@ class SamsungTVDeviceQLED(MediaPlayerEntity):
 
     @property
     def is_volume_muted(self):
-        """Boolean if volume is currently muted."""
-        if self._config["port"] == 8002:
-            self._upnp = self.get_upnp()
-            self._muted = self._upnp.get_mute()
-
+        """Return if volume is currently muted."""
         return self._muted
 
     @property
     def volume_level(self):
-        """Volume level of the media player (0..1)."""
-        if self._config["port"] == 8002:
-            self._upnp = self.get_upnp()
-            self._volume = int(self._upnp.get_volume()) / 100
-
+        """Return Volume level """
         return str(self._volume)
 
     @property
     def source(self):
-        """Name of the current input source."""
-        if self._config['port'] in (8001,8002):
-            self._application = self.get_application()
-            if self._application.current_app() is None:
-                self._current_source = 'TV/HDMI'
-                return self._current_source
-            else:
-                self._current_source = self._application.current_app()
-                return self._current_source
-        else:
-            return self._current_source
+        """Return Name of the current input source."""
+        return self._current_source
 
     @property
     def source_list(self):
