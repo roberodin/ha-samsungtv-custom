@@ -71,6 +71,7 @@ class Application:
         for app in APPS:
             if (self.is_visible(app) is True):
                 current_app = app
+                return current_app
         return current_app
 
     def app_list(self):

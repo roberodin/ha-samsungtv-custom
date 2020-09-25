@@ -460,6 +460,26 @@ class SamsungTVDeviceQLED(MediaPlayerEntity):
                 self._state = STATE_OFF
         else:
             self.send_key("KEY")
+        
+        if self._state == STATE_ON:
+            if self._config['port'] in (8001,8002):
+                application = self.get_application()
+                if application is not None:
+                    if application.current_app() is None:
+                        self._current_source = 'TV/HDMI'
+                        #return self._current_source
+                    else:
+                        self._current_source = application.current_app()
+                else:
+                    self._current_source = 'TV/HDMI'
+            
+            if self._config["port"] == 8002:
+                upnp = self.get_upnp()
+                if upnp is not None:
+                    """Volume level of the media player (0..1)."""
+                    self._volume = int(upnp.get_volume()) / 100
+                    """Boolean if volume is currently muted."""
+                    self._muted = upnp.get_mute()
 
 
     def get_remote(self):
@@ -543,35 +563,36 @@ class SamsungTVDeviceQLED(MediaPlayerEntity):
 
     @property
     def is_volume_muted(self):
-        """Boolean if volume is currently muted."""
-        if self._config["port"] == 8002:
-            self._upnp = self.get_upnp()
-            self._muted = self._upnp.get_mute()
+        # """Boolean if volume is currently muted."""
+        # if self._config["port"] == 8002:
+        #     self._upnp = self.get_upnp()
+        #     self._muted = self._upnp.get_mute()
 
         return self._muted
 
     @property
     def volume_level(self):
-        """Volume level of the media player (0..1)."""
-        if self._config["port"] == 8002:
-            self._upnp = self.get_upnp()
-            self._volume = int(self._upnp.get_volume()) / 100
+        # """Volume level of the media player (0..1)."""
+        # if self._config["port"] == 8002:
+        #     self._upnp = self.get_upnp()
+        #     self._volume = int(self._upnp.get_volume()) / 100
 
         return str(self._volume)
 
     @property
     def source(self):
         """Name of the current input source."""
-        if self._config['port'] in (8001,8002):
-            self._application = self.get_application()
-            if self._application.current_app() is None:
-                self._current_source = 'TV/HDMI'
-                return self._current_source
-            else:
-                self._current_source = self._application.current_app()
-                return self._current_source
-        else:
-            return self._current_source
+        return self._current_source;
+        # if self._config['port'] in (8001,8002):
+        #     self._application = self.get_application()
+        #     if self._application.current_app() is None:
+        #         self._current_source = 'TV/HDMI'
+        #         return self._current_source
+        #     else:
+        #         self._current_source = self._application.current_app()
+        #         return self._current_source
+        # else:
+        #     return self._current_source
 
     @property
     def source_list(self):
@@ -772,7 +793,8 @@ class SamsungTVDeviceWS(MediaPlayerEntity):
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
-        self.send_key("KEY", 1)
+        # straccio self.send_key("KEY", 1)
+        self.hass.async_add_job(self.send_key,"KEY", 1)
 
     def send_key(self, key, retry_count = 1):
         """Send a key to the tv and handles exceptions."""
