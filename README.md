@@ -97,8 +97,8 @@ Edit it by adding the following lines:
          token: kdsjfbsdkjbsdkjfskdjf:2
          id: 07270e01-0078-1000-8cd0-c4576e9dxxxxx
     ```
-    The token get be fetched via https://github.com/eclair4151/SmartCrypto
-    The id can be fetched vie http://IP_ADDRESS:8001/api/v2/
+    - The token get be fetched using https://github.com/eclair4151/SmartCrypto. It's the format `<ctx>:<sessionid>`.
+    - The id can be fetched via http://IP_ADDRESS:8001/api/v2/
     ### Example configuration.yaml for ctl_qled protocol
     ```
     media_player:
