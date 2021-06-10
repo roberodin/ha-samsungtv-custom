@@ -1,6 +1,7 @@
 {
   "domain": "samsungtv_custom",
   "name": "Samsungtv Custom",
+  "version": "3.0.5",
   "documentation": "https://github.com/roberodin/ha-samsungtv-custom",
   "requirements": ["wakeonlan==1.1.6"
   ],
