@@ -91,7 +91,8 @@ KEY_MAPPINGS = (
         ('Navigation Left',                  'KEY_LEFT'),
         ('Navigation Right',                 'KEY_RIGHT'),
         ('Navigation Return/Back',           'KEY_RETURN'),
-        ('Navigation Enter',                 'KEY_ENTER')
+        ('Navigation Enter',                 'KEY_ENTER'),
+        ('Navigation Home',                  'KEY_EXIT')
     )),
     ('Media Keys ', (
         ('Rewind',                           'KEY_REWIND'),
