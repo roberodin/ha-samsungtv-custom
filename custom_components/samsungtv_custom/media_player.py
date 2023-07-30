@@ -62,8 +62,8 @@ SOURCES = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 CONF_SOURCELIST = "sourcelist"
 CONF_APPLIST = "applist"
 CONF_PROTOCOL = "protocol"
-CONF_ID = ""
-CONF_TOKEN = ""
+CONF_ID = "id"
+CONF_TOKEN = "token"
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 
